@@ -1,22 +1,52 @@
-# http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(camera_aravis)
+
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
-find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs image_transport camera_info_manager dynamic_reconfigure driver_base tf dynamic_reconfigure)
+
+unset( CATKIN_INSTALL_INTO_PREFIX_ROOT )
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(camera_info_manager REQUIRED)
 find_package(Aravis REQUIRED)
 find_package(GLIB2 REQUIRED)
 
-generate_dynamic_reconfigure_options(cfg/CameraAravisConfig.cfg)
-catkin_package(
-    DEPENDS Aravis GLIB2
-    CATKIN_DEPENDS roscpp sensor_msgs image_transport camera_info_manager dynamic_reconfigure driver_base tf
-    INCLUDE_DIRS
-    LIBRARIES
+include_directories(
+  include
+  cfg/cpp
+  ${Aravis_INCLUDE_DIRS}
+  ${GLIB2_INCLUDE_DIRS}
 )
 
-include_directories(cfg/cpp ${catkin_INCLUDE_DIRS} ${Aravis_INCLUDE_DIRS} ${GLIB2_INCLUDE_DIRS})
-
 add_executable(camnode src/camnode.cpp)
+ament_target_dependencies(camnode
+  rclcpp
+  sensor_msgs
+  image_transport
+  camera_info_manager
+)
+target_link_libraries(camnode
+  ${Aravis_LIBRARIES} 
+  glib-2.0 
+  gmodule-2.0 
+  gobject-2.0
+)
 
-target_link_libraries(camnode ${catkin_LIBRARIES} ${Aravis_LIBRARIES} glib-2.0 gmodule-2.0 gobject-2.0)
-add_dependencies(camnode ${PROJECT_NAME}_gencfg)
+install(TARGETS camnode
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+ament_export_dependencies(ament_cmake)
+
+ament_package()

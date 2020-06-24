@@ -1,4 +1,6 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>camera_aravis</name>
   <version>2.0.0</version>
   <description>camera_aravis: An ethernet camera driver for ROS.</description>
@@ -15,22 +17,15 @@
   <author>strawlab</author>
   <author>Steve Safarik</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
   
-  <build_depend>roscpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_depend>camera_info_manager</build_depend>
-  <build_depend>dynamic_reconfigure</build_depend>
-  <build_depend>driver_base</build_depend>
-  <build_depend>tf</build_depend>
-  
-  <run_depend>roscpp</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>image_transport</run_depend>
-  <run_depend>camera_info_manager</run_depend>
-  <run_depend>dynamic_reconfigure</run_depend>
-  <run_depend>driver_base</run_depend>
-  <run_depend>tf</run_depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>camera_info_manager</depend>
 
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

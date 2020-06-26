@@ -4,3 +4,5 @@ cfg/CameraAravisConfig.cfgc
 cfg/cpp
 docs
 src/camera_aravis
+*.swp
+core

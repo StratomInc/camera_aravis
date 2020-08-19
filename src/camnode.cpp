@@ -61,15 +61,6 @@ typedef struct
 
 struct Config
 {
-  Config()
-  : acquire(false), exposure_auto("Continuous"), gain_auto("Continuous"), exposure_time_abs(2000.0),
-    gain(36.1),
-    acquisition_mode("Continuous"), acquisition_frame_rate(10.0), trigger_mode("Off"),
-    trigger_source("Line1"), trigger_rate(100.0), focus_pos(32767), frame_id("camera"), mtu(9000),
-    pixel_format("RGB8"), target_brightness(100)
-  {
-  }
-
   bool acquire;
   std::string exposure_auto;
   std::string gain_auto;
@@ -146,12 +137,6 @@ typedef struct
   int nBuffers;                 // Counter for Hz calculation.
 } ApplicationData;
 
-std::string device_id;
-// Parameter Client pointer
-std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
-// Parameter Event subscription
-std::shared_ptr<rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent, std::allocator<void>>> parameter_subscription_;
-
 // ------------------------------------
 
 // Conversions from integers to Arv types.
@@ -166,6 +151,13 @@ const char * szBufferStatusFromInt[] = {
   "ARV_BUFFER_STATUS_ABORTED"
 };
 
+// Global Parameters
+std::string device_id;
+// Parameter Client pointer
+std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
+// Parameter Event subscription
+std::shared_ptr<rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent, std::allocator<void>>> parameter_subscription_;
+
 // New Parameter Stuff
 void declareParameters()
 {
@@ -175,11 +167,11 @@ void declareParameters()
   // Declare the Test Parameters
   global.pNode->declare_parameter("device_id", "");
   global.pNode->declare_parameter("acquire", false);
-  global.pNode->declare_parameter("exposure_auto", "dog");
+  global.pNode->declare_parameter("exposure_auto", "Continuous");
   global.pNode->declare_parameter("gain_auto", "Continuous");
   global.pNode->declare_parameter("exposure_time_abs", 2000.0);
   global.pNode->declare_parameter("gain", 36.1);
-  global.pNode->declare_parameter("acquisition_mode", "Continuous");
+  global.pNode->declare_parameter("acquisition_mode", "Dog");
   global.pNode->declare_parameter("acuqisition_frame_rate", 10.0);
   global.pNode->declare_parameter("trigger_mode", "Off");
   global.pNode->declare_parameter("trigger_source", "Line1");
@@ -870,68 +862,53 @@ void PrintDOMTree(ArvGc * pGenicam, NODEEX nodeex, int nIndent)
 //
 void WriteCameraFeaturesFromRosparam(void)
 {
-  {
     const char * key = "Acquire";
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.acquire);
-  }
-  {
-    const char * key = "ExposureAuto";
+
+    key = "ExposureAuto";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.exposure_auto.c_str());
-  }
-  {
-    const char * key = "GainAuto";
+
+    key = "GainAuto";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.gain_auto.c_str());
-  }
-  {
-    const char * key = "ExposureTimeAbs";
+
+    key = "ExposureTimeAbs";
     arv_device_set_float_feature_value(
       global.pDevice, key,
       global.config.exposure_time_abs);
-  }
-  {
-    const char * key = "Gain";
+
+    key = "Gain";
     arv_device_set_float_feature_value(global.pDevice, key, global.config.gain);
-  }
-  {
-    const char * key = "AcquisitionMode";
+
+    key = "AcquisitionMode";
     arv_device_set_string_feature_value(
       global.pDevice, key,
       global.config.acquisition_mode.c_str());
-  }
-  {
-    const char * key = "AcquisitionFrameRate";
+
+    key = "AcquisitionFrameRate";
     arv_device_set_float_feature_value(
       global.pDevice, key,
       global.config.acquisition_frame_rate);
-  }
-  {
-    const char * key = "TriggerMode";
+
+    key = "TriggerMode";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.trigger_mode.c_str());
-  }
-  {
-    const char * key = "TriggerSource";
+
+    key = "TriggerSource";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.trigger_source.c_str());
-  }
-  {
-    const char * key = "TriggerRate";
+
+    key = "TriggerRate";
     arv_device_set_float_feature_value(global.pDevice, key, global.config.trigger_rate);
-  }
-  {
-    const char * key = "FocusPos";
+
+    key = "FocusPos";
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.focus_pos);
-  }
-  {
-    const char * key = "GevSCPSPacketSize";
+
+    key = "GevSCPSPacketSize";
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.mtu);
-  }
-  {
-    const char * key = "PixelFormat";
+
+    key = "PixelFormat";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.pixel_format.c_str());
-  }
-  {
-    const char * key = "TargetBrightness";
+
+    key = "TargetBrightness";
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.target_brightness);
-  }
 } // WriteCameraFeaturesFromRosparam()
 
 int main(int argc, char ** argv)
@@ -950,9 +927,8 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
   global.pNode = std::make_shared<rclcpp::Node>(kNodeName);
-
-  auto asynchronous_client = std::make_shared<rclcpp::AsyncParametersClient>(global.pNode);
-  auto event_sub = asynchronous_client->on_parameter_event(std::bind(&onParameterEvent, global.pNode, std::placeholders::_1));
+  parameter_client_ = std::make_shared<rclcpp::SyncParametersClient>(global.pNode);
+  parameter_subscription_ = parameter_client_->on_parameter_event(std::bind(&onParameterEvent, global.pNode, std::placeholders::_1)));
 
   // Print out some useful info.
   RCLCPP_INFO(global.pNode->get_logger(), "Attached cameras:");

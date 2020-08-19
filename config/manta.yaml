@@ -1,6 +1,5 @@
 manta_cam_node:
   ros__parameters:
-    name: Manta
     device_id: 50-0503464778
     acquire: true
     exposure_auto: "Continuous" # options Off, Once, Continuous
@@ -8,7 +7,7 @@ manta_cam_node:
     exposure_time_abs: 2000.0 # (us) min 0.0 max 1e6
     gain: 300.0 # (%) min 0.0 max 10000.0
     acquisition_mode: "Continuous" # options Continous, SingleFrame, MultiFrame
-    acuqisition_frame_rate: 10.0 # (hz) min 0.0 max 1000.0
+    acquisition_frame_rate: 10.0 # (hz) min 0.0 max 1000.0
     trigger_mode: "Off" # options Off, On
     trigger_source: "Line1" # options Software, Line1, Line2
     trigger_rate: 100.0 # (hz) min 0.01 max 200.0

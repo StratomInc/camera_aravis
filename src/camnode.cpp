@@ -145,6 +145,13 @@ typedef struct
   GMainLoop * main_loop;
   int nBuffers;                 // Counter for Hz calculation.
 } ApplicationData;
+
+std::string device_id;
+// Parameter Client pointer
+std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
+// Parameter Event subscription
+std::shared_ptr<rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent, std::allocator<void>>> parameter_subscription_;
+
 // ------------------------------------
 
 // Conversions from integers to Arv types.
@@ -166,8 +173,9 @@ void declareParameters()
     rclcpp::get_logger(""),
     "DECLARE CAM NODE PARAMETERS");
   // Declare the Test Parameters
+  global.pNode->declare_parameter("device_id", "");
   global.pNode->declare_parameter("acquire", false);
-  global.pNode->declare_parameter("exposure_auto", "Continuous");
+  global.pNode->declare_parameter("exposure_auto", "dog");
   global.pNode->declare_parameter("gain_auto", "Continuous");
   global.pNode->declare_parameter("exposure_time_abs", 2000.0);
   global.pNode->declare_parameter("gain", 36.1);
@@ -183,13 +191,13 @@ void declareParameters()
   global.pNode->declare_parameter("target_brightness", 100);
 }
 
-
 void setLocalParameters()
 {
   RCLCPP_INFO(
     rclcpp::get_logger(""),
     "SETTING LOCAL CAM NODE PARAMETERS");
   // Declare the Test Parameters
+  global.pNode->get_parameter("device_id", device_id);
   global.pNode->get_parameter("acquire", global.config.acquire);
   global.pNode->get_parameter("exposure_auto", global.config.exposure_auto);
   global.pNode->get_parameter("gain_auto", global.config.gain_auto);
@@ -206,6 +214,53 @@ void setLocalParameters()
   global.pNode->get_parameter("pixel_format", global.config.pixel_format);
   global.pNode->get_parameter("target_brightness", global.config.target_brightness);
 }
+
+void updateParameterValue(const rcl_interfaces::msg::Parameter param)
+{
+  if (param.name == "acquire") {
+    global.config.acquire = param.value.bool_value;
+  } else if (param.name == "exposure_auto") {
+    global.config.exposure_auto = param.value.string_value;
+  } else if (param.name == "gain_auto") {
+    global.config.gain_auto = param.value.string_value;
+  } else if (param.name == "exposure_time_abs") {
+    global.config.exposure_time_abs = param.value.double_value;
+  } else if (param.name == "gain") {
+    global.config.gain = param.value.double_value;
+  } else if (param.name == "acquisition_mode") {
+    global.config.acquisition_mode = param.value.string_value;
+  } else if (param.name == "acquisition_frame_rate") {
+    global.config.acquisition_frame_rate = param.value.double_value;
+  } else if (param.name == "trigger_mode") {
+    global.config.trigger_mode = param.value.string_value;
+  } else if (param.name == "trigger_source") {
+    global.config.trigger_source = param.value.string_value;
+  } else if (param.name == "trigger_rate") {
+    global.config.trigger_rate = param.value.double_value;
+  } else if (param.name == "focus_pos") {
+    global.config.focus_pos = param.value.integer_value;
+  } else if (param.name == "frame_id") {
+    global.config.frame_id = param.value.string_value;
+  } else if (param.name == "gev_scps_packet_size") {
+    global.config.mtu = param.value.integer_value;
+  } else if (param.name == "pixel_format") {
+    global.config.pixel_format = param.value.string_value;
+  } else if (param.name == "target_brightness") {
+    global.config.target_brightness = param.value.integer_value;
+  }
+}
+
+void onParameterEvent(
+    const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+{
+  RCLCPP_INFO(
+    global.pNode->get_logger(),
+    "onParameterEvent = ");
+  for (auto & changed_parameter : event->changed_parameters) {
+    updateParameterValue(changed_parameter);
+  }
+}
+
 
 static void set_cancel(int signal)
 {
@@ -896,6 +951,9 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   global.pNode = std::make_shared<rclcpp::Node>(kNodeName);
 
+  auto asynchronous_client = std::make_shared<rclcpp::AsyncParametersClient>(global.pNode);
+  auto event_sub = asynchronous_client->on_parameter_event(std::bind(&onParameterEvent, global.pNode, std::placeholders::_1));
+
   // Print out some useful info.
   RCLCPP_INFO(global.pNode->get_logger(), "Attached cameras:");
   arv_update_device_list();
@@ -905,7 +963,7 @@ int main(int argc, char ** argv)
   nDevices = arv_get_n_devices();
   RCLCPP_INFO(global.pNode->get_logger(), "# Devices: %d", nDevices);
   for (i = 0; i < nDevices; i++) {
-    RCLCPP_INFO(global.pNode->get_logger(), "Device%d: %s", i, arv_get_device_id(i));
+    RCLCPP_ERROR(global.pNode->get_logger(), "Device%d: %s", i, arv_get_device_id(i));
   }
 
   global.pNode->declare_parameter(kNodeName + "/guid");
@@ -944,7 +1002,7 @@ int main(int argc, char ** argv)
     global.pDevice = arv_camera_get_device(global.pCamera);
     RCLCPP_INFO(
       global.pNode->get_logger(),
-      "Opened: %s-%s", arv_device_get_string_feature_value(
+      "Opened: %s | %s", arv_device_get_string_feature_value(
         global.pDevice,
         "DeviceVendorName"
       ), arv_device_get_string_feature_value(

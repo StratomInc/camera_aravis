@@ -1,5 +1,7 @@
 manta_cam_node:
   ros__parameters:
+    name: Manta
+    device_id: 50-0503464778
     acquire: true
     exposure_auto: "Continuous" # options Off, Once, Continuous
     gain_auto: "Continuous" # options Off, Once, Continuous

@@ -62,7 +62,7 @@ typedef struct
 struct Config
 {
   Config()
-  : acquire(false), exposure_auto("Continous"), gain_auto("Continous"), exposure_time_abs(2000.0),
+  : acquire(false), exposure_auto("Continuous"), gain_auto("Continuous"), exposure_time_abs(2000.0),
     gain(36.1),
     acquisition_mode("Continuous"), acquisition_frame_rate(10.0), trigger_mode("Off"),
     trigger_source("Line1"), trigger_rate(100.0), focus_pos(32767), frame_id("camera"), mtu(9000),
@@ -158,6 +158,54 @@ const char * szBufferStatusFromInt[] = {
   "ARV_BUFFER_STATUS_FILLING",
   "ARV_BUFFER_STATUS_ABORTED"
 };
+
+// New Parameter Stuff
+void declareParameters()
+{
+  RCLCPP_INFO(
+    rclcpp::get_logger(""),
+    "DECLARE CAM NODE PARAMETERS");
+  // Declare the Test Parameters
+  global.pNode->declare_parameter("acquire", false);
+  global.pNode->declare_parameter("exposure_auto", "Continuous");
+  global.pNode->declare_parameter("gain_auto", "Continuous");
+  global.pNode->declare_parameter("exposure_time_abs", 2000.0);
+  global.pNode->declare_parameter("gain", 36.1);
+  global.pNode->declare_parameter("acquisition_mode", "Continuous");
+  global.pNode->declare_parameter("acuqisition_frame_rate", 10.0);
+  global.pNode->declare_parameter("trigger_mode", "Off");
+  global.pNode->declare_parameter("trigger_source", "Line1");
+  global.pNode->declare_parameter("trigger_rate", 100.0);
+  global.pNode->declare_parameter("focus_pos", 32767);
+  global.pNode->declare_parameter("frame_id", "camera");
+  global.pNode->declare_parameter("gev_scps_packet_size", 9000);
+  global.pNode->declare_parameter("pixel_format", "RGB8");
+  global.pNode->declare_parameter("target_brightness", 100);
+}
+
+
+void setLocalParameters()
+{
+  RCLCPP_INFO(
+    rclcpp::get_logger(""),
+    "SETTING LOCAL CAM NODE PARAMETERS");
+  // Declare the Test Parameters
+  global.pNode->get_parameter("acquire", global.config.acquire);
+  global.pNode->get_parameter("exposure_auto", global.config.exposure_auto);
+  global.pNode->get_parameter("gain_auto", global.config.gain_auto);
+  global.pNode->get_parameter("exposure_time_abs", global.config.exposure_time_abs);
+  global.pNode->get_parameter("gain", global.config.gain);
+  global.pNode->get_parameter("acquisition_mode", global.config.acquisition_mode);
+  global.pNode->get_parameter("acuqisition_frame_rate", global.config.acquisition_frame_rate);
+  global.pNode->get_parameter("trigger_mode", global.config.trigger_mode);
+  global.pNode->get_parameter("trigger_source", global.config.trigger_source);
+  global.pNode->get_parameter("trigger_rate", global.config.trigger_rate);
+  global.pNode->get_parameter("focus_pos", global.config.focus_pos);
+  global.pNode->get_parameter("frame_id", global.config.frame_id);
+  global.pNode->get_parameter("gev_scps_packet_size", global.config.mtu);
+  global.pNode->get_parameter("pixel_format", global.config.pixel_format);
+  global.pNode->get_parameter("target_brightness", global.config.target_brightness);
+}
 
 static void set_cancel(int signal)
 {
@@ -769,78 +817,64 @@ void WriteCameraFeaturesFromRosparam(void)
 {
   {
     const char * key = "Acquire";
-    global.pNode->declare_parameter(key, global.config.acquire);
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.acquire);
   }
   {
     const char * key = "ExposureAuto";
-    global.pNode->declare_parameter(key, global.config.exposure_auto);
     arv_device_set_string_feature_value(global.pDevice, key, global.config.exposure_auto.c_str());
   }
   {
     const char * key = "GainAuto";
-    global.pNode->declare_parameter(key, global.config.gain_auto);
     arv_device_set_string_feature_value(global.pDevice, key, global.config.gain_auto.c_str());
   }
   {
     const char * key = "ExposureTimeAbs";
-    global.pNode->declare_parameter(key, global.config.exposure_time_abs);
     arv_device_set_float_feature_value(
       global.pDevice, key,
       global.config.exposure_time_abs);
   }
   {
     const char * key = "Gain";
-    global.pNode->declare_parameter(key, global.config.gain);
     arv_device_set_float_feature_value(global.pDevice, key, global.config.gain);
   }
   {
     const char * key = "AcquisitionMode";
-    global.pNode->declare_parameter(key, global.config.acquisition_mode);
     arv_device_set_string_feature_value(
       global.pDevice, key,
       global.config.acquisition_mode.c_str());
   }
   {
     const char * key = "AcquisitionFrameRate";
-    global.pNode->declare_parameter(key, global.config.acquisition_frame_rate);
     arv_device_set_float_feature_value(
       global.pDevice, key,
       global.config.acquisition_frame_rate);
   }
   {
     const char * key = "TriggerMode";
-    global.pNode->declare_parameter(key, global.config.trigger_mode);
     arv_device_set_string_feature_value(global.pDevice, key, global.config.trigger_mode.c_str());
   }
   {
     const char * key = "TriggerSource";
-    global.pNode->declare_parameter(key, global.config.trigger_source);
     arv_device_set_string_feature_value(global.pDevice, key, global.config.trigger_source.c_str());
   }
   {
     const char * key = "TriggerRate";
-    global.pNode->declare_parameter(key, global.config.trigger_rate);
     arv_device_set_float_feature_value(global.pDevice, key, global.config.trigger_rate);
   }
   {
     const char * key = "FocusPos";
-    global.pNode->declare_parameter(key, global.config.focus_pos);
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.focus_pos);
   }
   {
     const char * key = "GevSCPSPacketSize";
-    global.pNode->declare_parameter(key, global.config.mtu);
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.mtu);
   }
   {
     const char * key = "PixelFormat";
-    global.pNode->declare_parameter(key, global.config.pixel_format);
     arv_device_set_string_feature_value(global.pDevice, key, global.config.pixel_format.c_str());
   }
   {
     const char * key = "TargetBrightness";
-    global.pNode->declare_parameter(key, global.config.target_brightness);
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.target_brightness);
   }
 } // WriteCameraFeaturesFromRosparam()
@@ -1054,6 +1088,8 @@ int main(int argc, char ** argv)
       }
     }
 
+    declareParameters();
+    setLocalParameters();
     WriteCameraFeaturesFromRosparam();
 
 #ifdef TUNING

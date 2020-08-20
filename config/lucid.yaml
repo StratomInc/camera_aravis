@@ -1,5 +1,6 @@
-camnode:
+lucid_camera:
   ros__parameters:
+    device_id: "Lucid Vision Labs-TRI032S-C-201000038"
     Acquire: true
     ExposureAuto: "Continuous" # options Off, Once, Continuous
     GainAuto: "Continuous" # options Off, Once, Continuous

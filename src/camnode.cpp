@@ -25,12 +25,15 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/int64.hpp>
 
+#include <chrono>
 #include <iostream>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <glib.h>
+
+using namespace std::chrono_literals;
 
 //#define TUNING	// Allows tuning the gains for the timestamp controller.  Publishes output on topic /dt, and receives gains on params /kp, /ki, /kd
 
@@ -62,6 +65,7 @@ typedef struct
 struct Config
 {
   bool acquire;
+  std::string device_id;
   std::string exposure_auto;
   std::string gain_auto;
   double exposure_time_abs;
@@ -137,6 +141,7 @@ typedef struct
   int nBuffers;                 // Counter for Hz calculation.
 } ApplicationData;
 
+
 // ------------------------------------
 
 // Conversions from integers to Arv types.
@@ -151,13 +156,6 @@ const char * szBufferStatusFromInt[] = {
   "ARV_BUFFER_STATUS_ABORTED"
 };
 
-// Global Parameters
-std::string device_id;
-// Parameter Client pointer
-std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
-// Parameter Event subscription
-std::shared_ptr<rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent, std::allocator<void>>> parameter_subscription_;
-
 // New Parameter Stuff
 void declareParameters()
 {
@@ -171,7 +169,7 @@ void declareParameters()
   global.pNode->declare_parameter("gain_auto", "Continuous");
   global.pNode->declare_parameter("exposure_time_abs", 2000.0);
   global.pNode->declare_parameter("gain", 36.1);
-  global.pNode->declare_parameter("acquisition_mode", "Dog");
+  global.pNode->declare_parameter("acquisition_mode", "Continuous");
   global.pNode->declare_parameter("acuqisition_frame_rate", 10.0);
   global.pNode->declare_parameter("trigger_mode", "Off");
   global.pNode->declare_parameter("trigger_source", "Line1");
@@ -189,7 +187,7 @@ void setLocalParameters()
     rclcpp::get_logger(""),
     "SETTING LOCAL CAM NODE PARAMETERS");
   // Declare the Test Parameters
-  global.pNode->get_parameter("device_id", device_id);
+  global.pNode->get_parameter("device_id", global.config.device_id);
   global.pNode->get_parameter("acquire", global.config.acquire);
   global.pNode->get_parameter("exposure_auto", global.config.exposure_auto);
   global.pNode->get_parameter("gain_auto", global.config.gain_auto);
@@ -241,18 +239,6 @@ void updateParameterValue(const rcl_interfaces::msg::Parameter param)
     global.config.target_brightness = param.value.integer_value;
   }
 }
-
-void onParameterEvent(
-    const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
-{
-  RCLCPP_INFO(
-    global.pNode->get_logger(),
-    "onParameterEvent = ");
-  for (auto & changed_parameter : event->changed_parameters) {
-    updateParameterValue(changed_parameter);
-  }
-}
-
 
 static void set_cancel(int signal)
 {
@@ -780,7 +766,7 @@ NODEEX GetGcFirstChild(ArvGc * pGenicam, NODEEX nodeex)
     nodeex.pNodeSibling = NULL;
   }
 
-  //RCLCPP_INFO(global.pNode->get_logger(), "GFC name=%s, node=%p, sib=%p", szNameChild, nodeex.pNode, nodeex.pNodeSibling);
+  //RCLCPP_INFO(pNode->get_logger(), "GFC name=%s, node=%p, sib=%p", szNameChild, nodeex.pNode, nodeex.pNodeSibling);
 
   return nodeex;
 } // GetGcFirstChild()
@@ -810,7 +796,7 @@ NODEEX GetGcNextSibling(ArvGc * pGenicam, NODEEX nodeex)
     nodeex.pNodeSibling = NULL;
   }
 
-  //RCLCPP_INFO(global.pNode->get_logger(), "GNS name=%s, node=%p, sib=%p", nodeex.szName, nodeex.pNode, nodeex.pNodeSibling);
+  //RCLCPP_INFO(pNode->get_logger(), "GNS name=%s, node=%p, sib=%p", nodeex.szName, nodeex.pNode, nodeex.pNodeSibling);
 
   return nodeex;
 } // GetGcNextSibling()
@@ -911,6 +897,15 @@ void WriteCameraFeaturesFromRosparam(void)
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.target_brightness);
 } // WriteCameraFeaturesFromRosparam()
 
+void onParameterEvent(
+    const rcl_interfaces::msg::ParameterEvent::SharedPtr event, rclcpp::Logger logger)
+{
+  for (auto & changed_parameter : event->changed_parameters) {
+    RCLCPP_INFO(global.pNode->get_logger(), "Changed Parameter: %s", changed_parameter.name);
+    updateParameterValue(changed_parameter);
+  }
+}
+
 int main(int argc, char ** argv)
 {
   char * pszGuid = NULL;
@@ -926,9 +921,34 @@ int main(int argc, char ** argv)
   global.idSoftwareTriggerTimer = 0;
 
   rclcpp::init(argc, argv);
-  global.pNode = std::make_shared<rclcpp::Node>(kNodeName);
-  parameter_client_ = std::make_shared<rclcpp::SyncParametersClient>(global.pNode);
-  parameter_subscription_ = parameter_client_->on_parameter_event(std::bind(&onParameterEvent, global.pNode, std::placeholders::_1)));
+  global.pNode = rclcpp::Node::make_shared(kNodeName);
+
+  // Setup the parameter client
+  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(global.pNode);
+  while (!parameters_client->wait_for_service(std::chrono::seconds(5))) {
+    if (!rclcpp::ok()) {
+      RCLCPP_ERROR(
+        global.pNode->get_logger(),
+        "Interrupted while waiting for the service. Exiting.");
+      rclcpp::shutdown();
+    }
+    RCLCPP_INFO(
+      global.pNode->get_logger(),
+      "service not available, waiting again...");
+  }
+
+  auto sub = parameters_client->on_parameter_event(
+    [global](const rcl_interfaces::msg::ParameterEvent::SharedPtr event) -> void
+    {
+      onParameterEvent(event, global.pNode->get_logger());
+    });
+
+  rclcpp::spin_some(global.pNode);
+  rclcpp::sleep_for(5s);
+  rclcpp::spin_some(global.pNode);
+  
+  declareParameters();
+  setLocalParameters();
 
   // Print out some useful info.
   RCLCPP_INFO(global.pNode->get_logger(), "Attached cameras:");
@@ -938,32 +958,22 @@ int main(int argc, char ** argv)
 
   nDevices = arv_get_n_devices();
   RCLCPP_INFO(global.pNode->get_logger(), "# Devices: %d", nDevices);
+  std::string stGuid;
   for (i = 0; i < nDevices; i++) {
+    if(arv_get_device_id(i) == global.config.device_id)
+    {
+      strcpy(szGuid, global.config.device_id.c_str());
+    }
     RCLCPP_ERROR(global.pNode->get_logger(), "Device%d: %s", i, arv_get_device_id(i));
   }
+  pszGuid = szGuid;
 
   global.pNode->declare_parameter(kNodeName + "/guid");
 
   rclcpp::Rate timeout(1);
   if (nDevices > 0) {
-    // Get the camera guid from either the command-line or as a parameter.
-    if (argc == 2) {
-      strcpy(szGuid, argv[1]);
-      pszGuid = szGuid;
-    } else {
-      if (global.pNode->has_parameter(kNodeName + "/guid")) {
-        std::string stGuid;
-
-        global.pNode->get_parameter(kNodeName + "/guid", stGuid);
-        strcpy(szGuid, stGuid.c_str());
-        pszGuid = szGuid;
-      } else {
-        pszGuid = NULL;
-      }
-    }
-
     // Open the camera, and set it up.
-    RCLCPP_INFO(global.pNode->get_logger(), "Opening: %s", pszGuid ? pszGuid : "(any)");
+    RCLCPP_ERROR(global.pNode->get_logger(), "Opening: %s", pszGuid ? pszGuid : "(any)");
     while (TRUE) {
       global.pCamera = arv_camera_new(pszGuid);
       if (global.pCamera) {
@@ -976,7 +986,7 @@ int main(int argc, char ** argv)
     }
 
     global.pDevice = arv_camera_get_device(global.pCamera);
-    RCLCPP_INFO(
+    RCLCPP_ERROR(
       global.pNode->get_logger(),
       "Opened: %s | %s", arv_device_get_string_feature_value(
         global.pDevice,
@@ -1122,8 +1132,6 @@ int main(int argc, char ** argv)
       }
     }
 
-    declareParameters();
-    setLocalParameters();
     WriteCameraFeaturesFromRosparam();
 
 #ifdef TUNING
@@ -1284,9 +1292,12 @@ int main(int argc, char ** argv)
 
     // Set up image_raw.
     global.pImageTransport = std::make_shared<image_transport::ImageTransport>(global.pNode);
+    std::string topic(global.pNode->get_name());
+    topic = "/" + topic + "/image_raw";
+    RCLCPP_ERROR(global.pNode->get_logger(), "PUBLISH ON TOPIC: %s", topic.c_str());
     global.publisher =
       std::make_shared<image_transport::CameraPublisher>(
-      global.pImageTransport->advertiseCamera("/image_raw", 1));
+      global.pImageTransport->advertiseCamera(topic, 1));
 
     // Connect signals with callbacks.
     g_signal_connect(pStream, "new-buffer", G_CALLBACK(NewBuffer_callback), &applicationdata);

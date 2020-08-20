@@ -1,6 +1,6 @@
-manta_cam_node:
+manta_camera:
   ros__parameters:
-    device_id: 50-0503464778
+    device_id: "Allied Vision Technologies-Manta G-419B-NIR (E0022528)-50-0503464778"
     acquire: true
     exposure_auto: "Continuous" # options Off, Once, Continuous
     gain_auto: "Continuous" # options Off, Once, Continuous

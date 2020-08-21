@@ -7,7 +7,7 @@ lucid_camera:
     ExposureTimeAbs: 2000.0 # (us) min 0.0 max 1e6
     Gain: 36.1 # (%) min 0.0 max 10000.0
     AcquisitionMode: "Continuous" # options Continous, SingleFrame, MultiFrame
-    AcquisitionFrameRate: 10.0 # (hz) min 0.0 max 1000.0
+    AcquisitionFrameRate: 2.0 # (hz) min 0.0 max 1000.0
     TriggerMode: "Off" # options Off, On
     TriggerSource: "Line1" # options Software, Line1, Line2
     TriggerRate: 100.0 # (hz) min 0.01 max 200.0

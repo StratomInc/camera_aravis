@@ -17,6 +17,7 @@
 
 #include <arv.h>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <camera_info_manager/camera_info_manager.h>
 #include <image_transport/image_transport.h>
 #include <rclcpp/rclcpp.hpp>
@@ -52,7 +53,7 @@ using namespace std::chrono_literals;
 static gboolean SoftwareTrigger_callback(void *);
 #endif
 
-static const std::string kNodeName = "camera";
+std::string kNodeName = "camera";
 
 typedef struct
 {
@@ -922,6 +923,7 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
   global.pNode = rclcpp::Node::make_shared(kNodeName);
+  kNodeName = global.pNode->get_name();
 
   // Setup the parameter client
   auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(global.pNode);
@@ -1141,8 +1143,9 @@ int main(int argc, char ** argv)
 #endif
 
     // Start the camerainfo manager.
-    std::string url = std::string("file://${ROS_HOME}/camera_info/") + arv_device_get_string_feature_value(
-      global.pDevice, "DeviceID") + std::string(".yaml");
+     std::string url = "file://" + ament_index_cpp::get_package_share_directory("camera_aravis") + "/calib/" + global.pNode->get_name() + ".yaml";
+    //std::string url = std::string("file://${ROS_HOME}/camera_info/") + arv_device_get_string_feature_value(
+    //  global.pDevice, "DeviceID") + std::string(".yaml");
     global.pCameraInfoManager = std::make_shared<camera_info_manager::CameraInfoManager>(
       global.pNode.get(), kNodeName, url);
 

@@ -166,20 +166,20 @@ void declareParameters()
   // Declare the Test Parameters
   global.pNode->declare_parameter("device_id", "");
   global.pNode->declare_parameter("acquire", false);
-  global.pNode->declare_parameter("exposure_auto", "Continuous");
-  global.pNode->declare_parameter("gain_auto", "Continuous");
-  global.pNode->declare_parameter("exposure_time_abs", 2000.0);
-  global.pNode->declare_parameter("gain", 36.1);
-  global.pNode->declare_parameter("acquisition_mode", "Continuous");
-  global.pNode->declare_parameter("acuqisition_frame_rate", 10.0);
-  global.pNode->declare_parameter("trigger_mode", "Off");
-  global.pNode->declare_parameter("trigger_source", "Line1");
-  global.pNode->declare_parameter("trigger_rate", 100.0);
-  global.pNode->declare_parameter("focus_pos", 32767);
-  global.pNode->declare_parameter("frame_id", "camera");
-  global.pNode->declare_parameter("gev_scps_packet_size", 9000);
-  global.pNode->declare_parameter("pixel_format", "RGB8");
-  global.pNode->declare_parameter("target_brightness", 100);
+  global.pNode->declare_parameter("exposure_auto", "");
+  global.pNode->declare_parameter("gain_auto", "");
+  global.pNode->declare_parameter("exposure_time_abs", 0.0);
+  global.pNode->declare_parameter("gain", 0.0);
+  global.pNode->declare_parameter("acquisition_mode", "");
+  global.pNode->declare_parameter("acuqisition_frame_rate", 0.0);
+  global.pNode->declare_parameter("trigger_mode", "");
+  global.pNode->declare_parameter("trigger_source", "");
+  global.pNode->declare_parameter("trigger_rate", 0.0);
+  global.pNode->declare_parameter("focus_pos", 0);
+  global.pNode->declare_parameter("frame_id", "");
+  global.pNode->declare_parameter("gev_scps_packet_size", 0);
+  global.pNode->declare_parameter("pixel_format", "");
+  global.pNode->declare_parameter("target_brightness", 0);
 }
 
 void setLocalParameters()
@@ -969,8 +969,6 @@ int main(int argc, char ** argv)
     RCLCPP_ERROR(global.pNode->get_logger(), "Device%d: %s", i, arv_get_device_id(i));
   }
   pszGuid = szGuid;
-
-  global.pNode->declare_parameter(kNodeName + "/guid");
 
   rclcpp::Rate timeout(1);
   if (nDevices > 0) {

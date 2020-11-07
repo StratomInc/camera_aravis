@@ -1,18 +1,18 @@
 lucid_camera:
   ros__parameters:
     device_id: "Lucid Vision Labs-TRI032S-C-201000038"
-    Acquire: true
-    ExposureAuto: "Continuous" # options Off, Once, Continuous
-    GainAuto: "Continuous" # options Off, Once, Continuous
-    ExposureTimeAbs: 2000.0 # (us) min 0.0 max 1e6
-    Gain: 36.1 # (%) min 0.0 max 10000.0
-    AcquisitionMode: "Continuous" # options Continous, SingleFrame, MultiFrame
-    AcquisitionFrameRate: 2.0 # (hz) min 0.0 max 1000.0
-    TriggerMode: "Off" # options Off, On
-    TriggerSource: "Line1" # options Software, Line1, Line2
-    TriggerRate: 100.0 # (hz) min 0.01 max 200.0
-    FocusPos: 32767 # min 0 max 65535
-    Frameid: "camera"
-    GevSCPSPacketSize: 9000  # options 1500, 576, 9000 (e.g. mtu)
-    PixelFormat: "RGB8" # options RGB, Mono8, Mono12, Mono12Packed, YUV422Packed, etc
-    TargetBrightness: 100 # min 0 max 100
+    acquire: true
+    exposure_auto: "Off" # options Off, Once, Continuous
+    gain_auto: "Continuous" # options Off, Once, Continuous
+    exposure_time_abs: 1000.0 # (us) min 0.0 max 1e6
+    gain: 36.0 # (%) min 0.0 max 10000.0
+    acquisition_mode: "Continuous" # options Continous, SingleFrame, MultiFrame
+    acquisition_frame_rate: 5.0 # (hz) min 0.0 max 1000.0
+    trigger_mode: "Off" # options Off, On
+    trigger_source: "Line1" # options Software, Line1, Line2
+    trigger_rate: 100.0 # (hz) min 0.01 max 200.0
+    focus_pos: 32767 # min 0 max 65535
+    frame_id: "camera"
+    gev_scps_packet_size: 9000  # options 1500, 576, 9000 (e.g. mtu) # CAUSES DROPPED FRAMES
+    pixel_format: "RGB8" # options RGB, Mono8, Mono12, Mono12Packed, YUV422Packed, etc
+    target_brightness: 100 # min 0 max 100

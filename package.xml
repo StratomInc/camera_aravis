@@ -19,7 +19,8 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   
-  <depend>roscpp</depend>
+  <depend>rclcpp</depend>
+  <depend>aravis</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>image_transport</depend>

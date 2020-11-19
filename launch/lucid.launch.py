@@ -22,13 +22,23 @@ def generate_launch_description():
     # Lucid Camera Node
     lucid_cam = Node(
         package='camera_aravis',
-        node_executable='camnode',
-        node_name='lucid_camera',
+        executable='camnode',
+        name='lucid_camera',
         output='screen',
         parameters=[config]
     )
 
+    # Image Proc Node
+    image_proc = Node(
+        package='image_proc',
+        executable='image_proc',
+        name='lucid_image_proc',
+        namespace='lucid_camera',
+        output='screen'
+    )
+
     return LaunchDescription([
-        lucid_cam
+        lucid_cam,
+        image_proc
     ])
 

@@ -19,16 +19,26 @@ def generate_launch_description():
         'manta.yaml'
         )
 
-    # Lucid Camera Node
+    # Manta Camera Node
     manta_cam = Node(
         package='camera_aravis',
-        node_executable='camnode',
-        node_name='manta_camera',
+        executable='camnode',
+        name='manta_camera',
         output='screen',
         parameters=[config]
     )
 
+    # Image Proc Node
+    image_proc = Node(
+        package='image_proc',
+        executable='image_proc',
+        name='manta_image_proc',
+        namespace='manta_camera',
+        output='screen'
+    )
+
     return LaunchDescription([
-        manta_cam
+        manta_cam,
+        image_proc
     ])
 

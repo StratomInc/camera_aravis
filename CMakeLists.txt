@@ -47,7 +47,11 @@ install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(DIRECTORY calib
+install(DIRECTORY calib/manta_camera
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY calib/lucid_camera
   DESTINATION share/${PROJECT_NAME}
 )
 

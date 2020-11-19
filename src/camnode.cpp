@@ -1141,7 +1141,7 @@ int main(int argc, char ** argv)
 #endif
 
     // Start the camerainfo manager.
-     std::string url = "file://" + ament_index_cpp::get_package_share_directory("camera_aravis") + "/calib/" + global.pNode->get_name() + ".yaml";
+     std::string url = "file://" + ament_index_cpp::get_package_share_directory("camera_aravis") + "/" + global.pNode->get_name() + "/" + global.pNode->get_name() + ".yaml";
     //std::string url = std::string("file://${ROS_HOME}/camera_info/") + arv_device_get_string_feature_value(
     //  global.pDevice, "DeviceID") + std::string(".yaml");
     global.pCameraInfoManager = std::make_shared<camera_info_manager::CameraInfoManager>(

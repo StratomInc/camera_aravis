@@ -164,22 +164,22 @@ void declareParameters()
     rclcpp::get_logger(""),
     "DECLARE CAM NODE PARAMETERS");
   // Declare the Test Parameters
-  global.pNode->declare_parameter("device_id", "");
-  global.pNode->declare_parameter("acquire", false);
-  global.pNode->declare_parameter("exposure_auto", "");
-  global.pNode->declare_parameter("gain_auto", "");
-  global.pNode->declare_parameter("exposure_time_abs", 0.0);
-  global.pNode->declare_parameter("gain", 0.0);
-  global.pNode->declare_parameter("acquisition_mode", "");
-  global.pNode->declare_parameter("acuqisition_frame_rate", 0.0);
-  global.pNode->declare_parameter("trigger_mode", "");
-  global.pNode->declare_parameter("trigger_source", "");
-  global.pNode->declare_parameter("trigger_rate", 0.0);
-  global.pNode->declare_parameter("focus_pos", 0);
-  global.pNode->declare_parameter("frame_id", "");
-  global.pNode->declare_parameter("gev_scps_packet_size", 0);
-  global.pNode->declare_parameter("pixel_format", "");
-  global.pNode->declare_parameter("target_brightness", 0);
+  global.config.device_id = global.pNode->declare_parameter("device_id", "");
+  global.config.acquire = global.pNode->declare_parameter("acquire", false);
+  global.config.exposure_auto = global.pNode->declare_parameter("exposure_auto", "");
+  global.config.gain_auto = global.pNode->declare_parameter("gain_auto", "");
+  global.config.exposure_time_abs = global.pNode->declare_parameter("exposure_time_abs", 0.0);
+  global.config.gain = global.pNode->declare_parameter("gain", 0.0);
+  global.config.acquisition_mode = global.pNode->declare_parameter("acquisition_mode", "");
+  global.config.acquisition_frame_rate = global.pNode->declare_parameter("acquisition_frame_rate", 0.0);
+  global.config.trigger_mode = global.pNode->declare_parameter("trigger_mode", "");
+  global.config.trigger_source = global.pNode->declare_parameter("trigger_source", "");
+  global.config.trigger_rate = global.pNode->declare_parameter("trigger_rate", 0.0);
+  global.config.focus_pos = global.pNode->declare_parameter("focus_pos", 0);
+  global.config.frame_id = global.pNode->declare_parameter("frame_id", "");
+  global.config.mtu = global.pNode->declare_parameter("gev_scps_packet_size", 0);
+  global.config.pixel_format = global.pNode->declare_parameter("pixel_format", "");
+  global.config.target_brightness = global.pNode->declare_parameter("target_brightness", 0);
 }
 
 void setLocalParameters()
@@ -875,6 +875,8 @@ void WriteCameraFeaturesFromRosparam(void)
     arv_device_set_float_feature_value(
       global.pDevice, key,
       global.config.acquisition_frame_rate);
+    RCLCPP_INFO_STREAM(global.pNode->get_logger(), "SETTING FRAME RATE ALLOWED: " << global.isImplementedAcquisitionFrameRate);
+    RCLCPP_INFO_STREAM(global.pNode->get_logger(), "TRYING TO SET ACQUISITION FRAME RATE TO: " << global.config.acquisition_frame_rate);
 
     key = "TriggerMode";
     arv_device_set_string_feature_value(global.pDevice, key, global.config.trigger_mode.c_str());
@@ -950,7 +952,7 @@ int main(int argc, char ** argv)
   rclcpp::spin_some(global.pNode);
   
   declareParameters();
-  setLocalParameters();
+  //setLocalParameters();
 
   // Print out some useful info.
   RCLCPP_INFO(global.pNode->get_logger(), "Attached cameras:");
@@ -1294,7 +1296,7 @@ int main(int argc, char ** argv)
     // Set up image_raw.
     global.pImageTransport = std::make_shared<image_transport::ImageTransport>(global.pNode);
     std::string topic(global.pNode->get_name());
-    topic = "/" + topic + "/image_raw";
+    topic = "/" + topic + "/image";
     RCLCPP_ERROR(global.pNode->get_logger(), "PUBLISH ON TOPIC: %s", topic.c_str());
     global.publisher =
       std::make_shared<image_transport::CameraPublisher>(

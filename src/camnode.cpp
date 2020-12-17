@@ -81,6 +81,7 @@ struct Config
   int mtu;
   std::string pixel_format;
   int target_brightness;
+  std::string camera_calibration_directory;
 };
 
 // Global variables -------------------
@@ -175,35 +176,11 @@ void declareParameters()
   global.config.trigger_mode = global.pNode->declare_parameter("trigger_mode", "");
   global.config.trigger_source = global.pNode->declare_parameter("trigger_source", "");
   global.config.trigger_rate = global.pNode->declare_parameter("trigger_rate", 0.0);
-  global.config.focus_pos = global.pNode->declare_parameter("focus_pos", 0);
   global.config.frame_id = global.pNode->declare_parameter("frame_id", "");
   global.config.mtu = global.pNode->declare_parameter("gev_scps_packet_size", 0);
   global.config.pixel_format = global.pNode->declare_parameter("pixel_format", "");
   global.config.target_brightness = global.pNode->declare_parameter("target_brightness", 0);
-}
-
-void setLocalParameters()
-{
-  RCLCPP_INFO(
-    rclcpp::get_logger(""),
-    "SETTING LOCAL CAM NODE PARAMETERS");
-  // Declare the Test Parameters
-  global.pNode->get_parameter("device_id", global.config.device_id);
-  global.pNode->get_parameter("acquire", global.config.acquire);
-  global.pNode->get_parameter("exposure_auto", global.config.exposure_auto);
-  global.pNode->get_parameter("gain_auto", global.config.gain_auto);
-  global.pNode->get_parameter("exposure_time_abs", global.config.exposure_time_abs);
-  global.pNode->get_parameter("gain", global.config.gain);
-  global.pNode->get_parameter("acquisition_mode", global.config.acquisition_mode);
-  global.pNode->get_parameter("acuqisition_frame_rate", global.config.acquisition_frame_rate);
-  global.pNode->get_parameter("trigger_mode", global.config.trigger_mode);
-  global.pNode->get_parameter("trigger_source", global.config.trigger_source);
-  global.pNode->get_parameter("trigger_rate", global.config.trigger_rate);
-  global.pNode->get_parameter("focus_pos", global.config.focus_pos);
-  global.pNode->get_parameter("frame_id", global.config.frame_id);
-  global.pNode->get_parameter("gev_scps_packet_size", global.config.mtu);
-  global.pNode->get_parameter("pixel_format", global.config.pixel_format);
-  global.pNode->get_parameter("target_brightness", global.config.target_brightness);
+  global.config.camera_calibration_directory = global.pNode->declare_parameter("camera_calibration_package", "");
 }
 
 void updateParameterValue(const rcl_interfaces::msg::Parameter param)
@@ -228,8 +205,6 @@ void updateParameterValue(const rcl_interfaces::msg::Parameter param)
     global.config.trigger_source = param.value.string_value;
   } else if (param.name == "trigger_rate") {
     global.config.trigger_rate = param.value.double_value;
-  } else if (param.name == "focus_pos") {
-    global.config.focus_pos = param.value.integer_value;
   } else if (param.name == "frame_id") {
     global.config.frame_id = param.value.string_value;
   } else if (param.name == "gev_scps_packet_size") {
@@ -238,6 +213,8 @@ void updateParameterValue(const rcl_interfaces::msg::Parameter param)
     global.config.pixel_format = param.value.string_value;
   } else if (param.name == "target_brightness") {
     global.config.target_brightness = param.value.integer_value;
+  } else if (param.name == "camera_calibration_package") {
+    global.config.camera_calibration_directory = param.value.string_value;
   }
 }
 
@@ -887,9 +864,6 @@ void WriteCameraFeaturesFromRosparam(void)
     key = "TriggerRate";
     arv_device_set_float_feature_value(global.pDevice, key, global.config.trigger_rate);
 
-    key = "FocusPos";
-    arv_device_set_integer_feature_value(global.pDevice, key, global.config.focus_pos);
-
     key = "GevSCPSPacketSize";
     arv_device_set_integer_feature_value(global.pDevice, key, global.config.mtu);
 
@@ -952,7 +926,6 @@ int main(int argc, char ** argv)
   rclcpp::spin_some(global.pNode);
   
   declareParameters();
-  //setLocalParameters();
 
   // Print out some useful info.
   RCLCPP_INFO(global.pNode->get_logger(), "Attached cameras:");
@@ -1051,12 +1024,6 @@ int main(int argc, char ** argv)
       ARV_GC_FEATURE_NODE(
         pGcNode), &error) : FALSE;
 
-    pGcNode = arv_device_get_feature(global.pDevice, "FocusPos");
-    global.isImplementedFocusPos =
-      ARV_GC_FEATURE_NODE(pGcNode) ? arv_gc_feature_node_is_implemented(
-      ARV_GC_FEATURE_NODE(
-        pGcNode), &error) : FALSE;
-
     pGcNode = arv_device_get_feature(global.pDevice, "GevSCPSPacketSize");
     global.isImplementedMtu = ARV_GC_FEATURE_NODE(pGcNode) ? arv_gc_feature_node_is_implemented(
       ARV_GC_FEATURE_NODE(
@@ -1090,15 +1057,8 @@ int main(int argc, char ** argv)
     arv_camera_get_width_bounds(global.pCamera, &global.widthRoiMin, &global.widthRoiMax);
     arv_camera_get_height_bounds(global.pCamera, &global.heightRoiMin, &global.heightRoiMax);
 
-    if (global.isImplementedFocusPos) {
-      gint64 focusMin64, focusMax64;
-      arv_device_get_integer_feature_bounds(global.pDevice, "FocusPos", &focusMin64, &focusMax64);
-      global.configMin.focus_pos = focusMin64;
-      global.configMax.focus_pos = focusMax64;
-    } else {
-      global.configMin.focus_pos = 0;
-      global.configMax.focus_pos = 0;
-    }
+    global.configMin.focus_pos = 0;
+    global.configMax.focus_pos = 0;
 
     global.configMin.acquisition_frame_rate = 0.0;
     global.configMax.acquisition_frame_rate = 1000.0;
@@ -1143,9 +1103,18 @@ int main(int argc, char ** argv)
 #endif
 
     // Start the camerainfo manager.
-     std::string url = "file://" + ament_index_cpp::get_package_share_directory("camera_aravis") + "/" + global.pNode->get_name() + "/" + global.pNode->get_name() + ".yaml";
+    std::string url;
+    if(global.config.camera_calibration_directory != "")
+    {
+     url = "file://" + ament_index_cpp::get_package_share_directory(global.config.camera_calibration_directory) + "/calib/" + global.pNode->get_name() + "/" + global.pNode->get_name() + ".yaml";
     //std::string url = std::string("file://${ROS_HOME}/camera_info/") + arv_device_get_string_feature_value(
     //  global.pDevice, "DeviceID") + std::string(".yaml");
+    }
+    else
+    {
+      url = std::string("file://${ROS_HOME}/camera_info/") + arv_device_get_string_feature_value(global.pDevice, "DeviceID") + std::string(".yaml");
+    }
+    
     global.pCameraInfoManager = std::make_shared<camera_info_manager::CameraInfoManager>(
       global.pNode.get(), kNodeName, url);
 
@@ -1178,8 +1147,6 @@ int main(int argc, char ** argv)
       arv_device_get_integer_feature_value(
         global.pDevice,
         "PixelFormat"));
-    global.config.focus_pos = global.isImplementedFocusPos ? arv_device_get_integer_feature_value(
-      global.pDevice, "FocusPos") : 0;
 
     // Print information.
     RCLCPP_INFO(global.pNode->get_logger(), "    Using Camera Configuration:");
@@ -1262,10 +1229,6 @@ int main(int argc, char ** argv)
         "    Gain                 = %f %% in range [%f,%f]", global.config.gain,
         global.configMin.gain, global.configMax.gain);
     }
-
-    RCLCPP_INFO(
-      global.pNode->get_logger(), "    Can set FocusPos:      %s",
-      global.isImplementedFocusPos ? "True" : "False");
 
     if (global.isImplementedMtu) {
       RCLCPP_INFO(

@@ -16,29 +16,19 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory('camera_aravis'),
         'config',
-        'lucid.yaml'
+        'camera_aravis_config.yaml'
         )
 
     # Lucid Camera Node
     lucid_cam = Node(
         package='camera_aravis',
         executable='camnode',
-        name='lucid_camera',
+        name='generic_camera',
         output='screen',
         parameters=[config]
     )
 
-    # Image Proc Node
-    image_proc = Node(
-        package='image_proc',
-        executable='image_proc',
-        name='lucid_image_proc',
-        namespace='lucid_camera',
-        output='screen'
-    )
-
     return LaunchDescription([
-        lucid_cam,
-        image_proc
+        lucid_cam
     ])
 
